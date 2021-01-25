@@ -31,9 +31,8 @@ def transaction_condition(transaction: object) -> bool:
 
 
 class Bot:
-    def __init__(self, token: str, balance: int, chat_id: str):
+    def __init__(self, token: str, chat_id: str):
         self.bcs_address = ""
-        self.balance = balance
         self.token = token
         self.chat_id = chat_id
         self.last_message_id = None
@@ -89,7 +88,7 @@ class Bot:
             print('Creating user..')
             new_user_res = create_user(str(self.chat_id), {
                 "bcs_address": self.bcs_address,
-                "balance": self.balance
+                "balance": 0
             })
             print(new_user_res.state)
 

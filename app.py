@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-
 app = Flask(__name__)
 
 users_dict = {}
@@ -27,6 +26,7 @@ def is_message(message: object):
     chat_id = message["from"]["id"]
     text = message["text"]
     if text == command_start:
+        print(chat_id, "_________________________________")
         users_dict[chat_id] = Bot(TOKEN, chat_id)
 
     if chat_id in users_dict:

@@ -21,10 +21,13 @@ class Rest:
 
     @staticmethod
     def post(url, data) -> Response:
+
         try:
             res = requests.post(url, json=data)
+            print(res.status_code, "_______________________________________________________________")
             return Response(SUCCESS_MESSAGE, res.json()) if res.status_code == 200 else Response(FAILED_MESSAGE)
-        except Exception:
+        except Exception as e:
+            print(e)
             return Response(FAILED_MESSAGE)
 
     @staticmethod
