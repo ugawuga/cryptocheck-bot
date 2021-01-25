@@ -1,12 +1,22 @@
+import requests
 from flask import Flask, request
-from telegram.bot import Bot
+from telegram.bot import Bot, get_url
 from command import command_start
 import os
 from dotenv import load_dotenv
+from pyngrok import ngrok
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
+
+# Set up local tunnel
+tunnel = ngrok.connect(5000)
+res = requests.post(get_url(TOKEN, "setWebhook"), json={"url": tunnel.public_url.replace("http", "https")})
+if not res.json()["ok"]:
+    exit(1)
+# End of local tunnel setting up
+
 app = Flask(__name__)
 
 users_dict = {}
@@ -26,7 +36,6 @@ def is_message(message: object):
     chat_id = message["from"]["id"]
     text = message["text"]
     if text == command_start:
-        print(chat_id, "_________________________________")
         users_dict[chat_id] = Bot(TOKEN, chat_id)
 
     if chat_id in users_dict:
