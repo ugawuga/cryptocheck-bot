@@ -3,11 +3,29 @@ from api.rest import Rest
 
 BASE_API_URL = DB_API_URL + ":" + DB_API_PORT
 
-
+"""for api"""
 def get_transactions(address: str, contract: str):
     return Rest.get(BCS_API_URL + '/address/' + address + '/contract-txs/' + contract)
 
 
+def get_api_balance(address: str, contract: str):
+    return Rest.get(BCS_API_URL + '/address/' + address + '/contract-txs/' + contract)
+
+
+"""for personified hash"""
+def form_user_hash(chat_id: str, data: object):
+    return Rest.post(BASE_API_URL + '/user/formhash/' + chat_id, data)
+
+
+def get_user_hash(chat_id: str):
+    return Rest.get(BASE_API_URL + '/user/hash/' + chat_id)
+
+
+def update_user_hash(chat_id: str, data: object):
+    return Rest.put(BASE_API_URL + '/user/updatehash/' + chat_id, data)
+
+
+"""for users in tabtables"""
 def get_users():
     return Rest.get(BASE_API_URL + '/users')
 
@@ -26,5 +44,36 @@ def update_user(chat_id: str, data: object):
     return Rest.put(BASE_API_URL + '/user/' + chat_id, data)
 
 
+"""for transaction id"""
+def get_user_transaction(chat_id: str):
+    return Rest.get(BASE_API_URL + '/user/transaction/' + chat_id)
 
 
+def add_user_transaction(chat_id: str, data: object):
+    return Rest.post(BASE_API_URL + '/user/transaction/' + chat_id, data)
+
+
+def update_user_transaction(chat_id: str, data: object):
+    return Rest.put(BASE_API_URL + '/user/transaction/' + chat_id, data)
+
+
+def delete_user_transaction(chat_id: str):
+    return Rest.delete(BASE_API_URL + "/user/transaction/" + chat_id)
+
+
+"""for address checking"""
+def check_address_exists(address: str):
+    return Rest.get(BASE_API_URL + "/address/" + address)
+
+
+"""for anon hash"""
+def get_anon_hash(chat_id: str):
+    return Rest.get(BASE_API_URL + "/user/get/anonhash/" + chat_id)
+
+
+def add_anon_hash(chat_id: str, data: object):
+    return Rest.post(BASE_API_URL + "/user/form/anonhash/" + chat_id, data)
+
+
+def update_anon_hash(chat_id: str, data: object):
+    return Rest.put(BASE_API_URL + "/user/update/anonhash/" + chat_id, data)
