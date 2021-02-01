@@ -77,3 +77,11 @@ def add_anon_hash(chat_id: str, data: object):
 
 def update_anon_hash(chat_id: str, data: object):
     return Rest.put(BASE_API_URL + "/user/update/anonhash/" + chat_id, data)
+
+
+def send_hash_list(chat_id: str):
+    return Rest.get(BASE_API_URL + "/user/get/hashlist/" + chat_id)
+
+
+def send_hash_and_flag(chat_id: str):
+    return Rest.get(BASE_API_URL + "/user/get/hash/flag/" + chat_id)

@@ -8,13 +8,13 @@ from utils.fapper import Map
 from utils.is_unique import is_unique
 from api.api import get_transactions, get_user, create_user, form_user_hash, get_user_hash, \
     update_user, check_address_exists, update_user_hash, get_anon_hash, update_anon_hash, add_anon_hash, \
-    get_user_transaction, add_user_transaction
+    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag
 from api.rest import SUCCESS_MESSAGE
 from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockchain_keyboard, check_keyboard, \
     CB_DATA_NEXT, \
     CB_DATA_NO, CB_DATA_BACK, CB_DATA_YES, CB_DATA_HOME, BUTTON_YES, BUTTON_CUMBACK, BUTTON_HOME, CB_DATA_CASH, \
     CB_DATA_CHECK, CB_DATA_REPLENISH, \
-    CB_DATA_FORM_CHECK, CB_DATA_FORM_ANON_CHECK, CB_DATA_BALANCE, CB_DATA_PAYLOAD
+    CB_DATA_FORM_CHECK, CB_DATA_FORM_ANON_CHECK, CB_DATA_BALANCE, CB_DATA_PAYLOAD, CB_DATA_STAT
 
 START_NODE_ID = "start_id"
 BLOCKCHAIN_NODE_ID = "blockchain_id"
@@ -49,6 +49,7 @@ ANON_CHECKOUT_ID = "anon_checkout_id"
 CHOOSE_HASH_ID = "choose_hash_id"
 SEND_TO_CONTRACT_ID = "send_to_contract_id"
 CONTRACT_RESPONSE_ID = "contract_response_id"
+STATISTICS_ID = "statisitcs_id"
 
 
 def get_url(token: str, method: str):
@@ -204,7 +205,7 @@ class Bot:
             sum_list = []
             for i in user_transaction_balance_list:
                 values = list(i.values())
-                print(values, "____)_))_)_)_)_)_)_)_)_)_)_)_)_)_)_)_)_)_)")
+                print(values)
                 user_data = values[3]
                 print(user_data, "raw user data")
                 if len(user_data) != 0:
@@ -218,9 +219,9 @@ class Bot:
 
                     if int_dec_data is not None:
                         sum_list.append(int_dec_data)
-                        print(sum_list, "weweweweweweweweweweweeweweweeweweweewewewe")
+                        print(sum_list)
                         balance_sum = sum(sum_list)
-                        print(balance_sum, "mememememeememememememememememeememememem")
+                        print(balance_sum)
 
             if not is_unique(user_transaction_ids_list):
                 return FORM_WRONG_ID
@@ -418,22 +419,30 @@ class Bot:
         print(res)
         if res.state == SUCCESS_MESSAGE:
             res_map = Map(res.data)
+            anon_check = res_map.hash
             returned_hash = res_map.hash.check_hash
             hash_balance = res_map.hash.value
             hash_flag = res_map.hash.flag
-            print(hash_balance, hash_flag, "___________________________")
+            print(anon_check)
+            print(hash_flag, "___________________________")
+            print(self.hash, "Self hash")
+            print(returned_hash, "REturned hash ")
+
+            #user_hash_filter = filter(lambda t: t.check_hash == self.hash, anon_check)
+            #user_hash_list = list(user_hash_filter)
+            #print(user_hash_list)
+
             if self.hash == returned_hash:
                 if not hash_flag:
                     res = get_user(str(self.chat_id))
                     if res.state == SUCCESS_MESSAGE:
                         user_map = Map(res.data)
                         balance = user_map.users.balance
-                        print(balance, "++")
+
                         new_user_balance = update_user(str(self.chat_id), {
                             "balance": balance + hash_balance,
                             "bcs_address": self.bcs_address
                         })
-                        print(new_user_balance, "[")
                         if new_user_balance.state == SUCCESS_MESSAGE:
                             self.balance = balance + hash_balance
                             print(self.balance, "wwewewew")
@@ -441,7 +450,7 @@ class Bot:
                                 "flag": True
                             })
                             if check_flag == SUCCESS_MESSAGE:
-                                print(check_flag)
+                                print(check_flag, "FLAAAAAAAAAAAAAAAAAAAAAAAG")
                             return CORRECT_HASH_ID
 
                         else:
@@ -467,7 +476,8 @@ class Bot:
 
         return SEND_NODE_ID if msg == CB_DATA_REPLENISH else \
             FORM_CHECK_SENDER_ID if msg == CB_DATA_CHECK else GET_CASH_ID if msg == CB_DATA_CASH \
-                else SEND_TO_CONTRACT_ID if msg == CB_DATA_PAYLOAD else None
+                else SEND_TO_CONTRACT_ID if msg == CB_DATA_PAYLOAD \
+                else STATISTICS_ID if msg == CB_DATA_STAT else None
 
     def send_to_contract(self, msg: str):
         self.payment = int(msg)
@@ -490,13 +500,54 @@ class Bot:
                         print(send_message)
                         return CONTRACT_RESPONSE_ID
                     else:
-                        send_tokens = send_to_contract_request(self.bcs_address, self.payment, "a3c3077f9c5c9e522534f529559dd14d07830ed4")
+                        send_tokens = send_to_contract_request(self.bcs_address, self.payment,
+                                                               "a3c3077f9c5c9e522534f529559dd14d07830ed4")
                         print(send_tokens)
                         return CONTRACT_RESPONSE_ID
                 else:
                     return ERROR_ID
         else:
             return ERROR_ID
+
+    def send_person_hash(self, msg: str):
+        # map, list, for loop  and other stuff
+        res = send_hash_and_flag(str(self.chat_id))
+        if res.state == SUCCESS_MESSAGE:
+            res_map = Map(res.data)
+            user_hash = res_map.hash_flag
+            user_hash_filter = filter(lambda t: t.check_hash == self.hash, user_hash)
+            user_hash_list = list(user_hash_filter)
+            print(user_hash_list)
+
+
+    def send_anon_hash(self, msg: str):
+        res = send_hash_list(str(self.chat_id))
+        if res.state == SUCCESS_MESSAGE:
+            res_map = Map(res.data)
+            user_hash = res_map.hash
+
+            for i in user_hash:
+                if i is not None:
+                    user_hash_items = list(i.values())
+                    print(user_hash_items)
+                    hash_hash = user_hash_items[0:2]
+                    print(hash_hash)
+
+                else:
+                    return ERROR_ID
+            check_hash_map = map(lambda c: c.check_hash, user_hash)
+            check_hash_list = list(check_hash_map)
+
+            flag_hash_map = map(lambda f: f.flag, user_hash)
+            flag_hash_list = reversed(list(flag_hash_map))
+
+            zipped_dict = dict(zip(check_hash_list, flag_hash_list))
+            zipped_items = zipped_dict.items()
+            #print(zipped_items)
+
+            for i in zipped_items:
+                pass
+                #print(i)
 
     def render(self):
         return {
@@ -568,7 +619,8 @@ class Bot:
             },
             f"{FORM_CHECK_SENDER_ID}": {
                 "func": lambda msg: USERS_CHECK_NODE_ID if msg == CB_DATA_FORM_CHECK
-                else ANON_CHECK_NODE_ID if msg == CB_DATA_FORM_ANON_CHECK else None,
+                else ANON_CHECK_NODE_ID if msg == CB_DATA_FORM_ANON_CHECK
+                else BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
                 "data": {
                     "text": "Выберите тип чека: ",
                     "reply_markup": {"inline_keyboard": check_keyboard},
@@ -633,7 +685,8 @@ class Bot:
             },
             f"{CHOOSE_HASH_ID}": {
                 "func": lambda msg: CHECKOUT_ID if msg == CB_DATA_FORM_CHECK
-                else ANON_CHECKOUT_ID if msg == CB_DATA_FORM_ANON_CHECK else None,
+                else ANON_CHECKOUT_ID if msg == CB_DATA_FORM_ANON_CHECK
+                else BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
                 "data": {
                     "text": "Выберите тип хэша: ",
                     "reply_markup": {"inline_keyboard": check_keyboard}
@@ -682,17 +735,26 @@ class Bot:
                 }
             },
             f"{CONTRACT_RESPONSE_ID}": {
-              "func": lambda msg: BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
-              "data": {
-                  "text": "Запрос на перевод был принят. Через несколько минут транзакция будет одобрена. Ожидайте.",
-                  "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
-              }
+                "func": lambda msg: BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": "Запрос на перевод был принят. Через несколько минут транзакция будет одобрена. Ожидайте.",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
+                }
             },
             f"{BALANCE_ID}": {
                 "func": lambda msg: BLOCKCHAIN_NODE_ID if msg == CB_DATA_HOME else None,
                 "data": {
                     "text": f"bcs-address balance: {self.balance}",
                     "reply_markup": {"inline_keyboard": [[BUTTON_HOME]]},
+                }
+            },
+            f"{STATISTICS_ID}": {
+                "func": lambda msg: self.send_person_hash(msg) if msg == CB_DATA_FORM_CHECK
+                else self.send_anon_hash(msg) if msg == CB_DATA_FORM_ANON_CHECK
+                else BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": "Выберите тип чека: ",
+                    "reply_markup": {"inline_keyboard": check_keyboard},
                 }
             },
             f"{ERROR_ID}": {
