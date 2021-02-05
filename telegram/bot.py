@@ -8,7 +8,7 @@ from utils.fapper import Map
 from utils.is_unique import is_unique
 from api.api import get_transactions, get_user, create_user, form_user_hash, get_user_hash, \
     update_user, check_address_exists, update_user_hash, get_anon_hash, update_anon_hash, add_anon_hash, \
-    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag
+    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag, get_used_hashes, send_used_hashes
 from api.rest import SUCCESS_MESSAGE
 from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockchain_keyboard, check_keyboard, \
     CB_DATA_NEXT, \
@@ -413,6 +413,67 @@ class Bot:
         else:
             return ERROR_ID
 
+    def anon_hash_get(self, msg: str):
+        self.hash = msg
+        res = send_hash_list(str(self.chat_id))
+        print(res)
+        if res.state == SUCCESS_MESSAGE:
+            res_map = Map(res.data)
+            hash_list = res_map.hash
+            print(hash_list)
+            filter_by_hash = filter(lambda t: t.check_hash == self.hash, hash_list)
+            filtered_hash_list = list(filter_by_hash)
+
+            if len(filtered_hash_list) == 0:
+                print("an impressive cock")
+                return INVALID_HASH_ID
+            else:
+                print(filtered_hash_list, "оооооооооооооооооооооооооооооооооооооооооо3")
+
+                for i in filtered_hash_list:
+                    print(i, "meeh")
+                    values = list(i.values())
+                    print(values)
+                    hash_from_list = values[0]
+                    value_data = values[3]
+                    res = get_used_hashes(str(self.chat_id))
+                    if res.state == SUCCESS_MESSAGE:
+                        hash_map = Map(res.data)
+                        hash_in_db = hash_map.added_hash
+                        print(hash_in_db)
+                        final = list(map(lambda t: t.used_hash, hash_in_db))
+                        print(final)
+
+                        if self.hash not in final:
+                            res = get_user(str(self.chat_id))
+                            if res.state == SUCCESS_MESSAGE:
+                                user_map = Map(res.data)
+                                balance = user_map.users.balance
+
+                                new_user_balance = update_user(str(self.chat_id), {
+                                    "balance": balance + value_data,
+                                    "bcs_address": self.bcs_address
+                                })
+                                if new_user_balance.state == SUCCESS_MESSAGE:
+                                    self.balance = balance + value_data
+                                    print(self.balance, "wwewewew")
+                                    res = send_used_hashes(str(self.chat_id), {
+                                        "used_hashes": self.hash
+                                    })
+                                    if res.state == SUCCESS_MESSAGE:
+
+                                        return CORRECT_HASH_ID
+                                else:
+                                    return ERROR_ID
+                            else:
+                                return ERROR_ID
+                        else:
+                            return INVALID_FLAG_ID
+                    else:
+                        return ERROR_ID
+        else:
+            return ERROR_ID
+
     def get_anon_hash(self, msg: str):
         self.hash = msg
         res = get_anon_hash(str(self.chat_id))
@@ -427,10 +488,6 @@ class Bot:
             print(hash_flag, "___________________________")
             print(self.hash, "Self hash")
             print(returned_hash, "REturned hash ")
-
-            #user_hash_filter = filter(lambda t: t.check_hash == self.hash, anon_check)
-            #user_hash_list = list(user_hash_filter)
-            #print(user_hash_list)
 
             if self.hash == returned_hash:
                 if not hash_flag:
@@ -519,7 +576,6 @@ class Bot:
             user_hash_list = list(user_hash_filter)
             print(user_hash_list)
 
-
     def send_anon_hash(self, msg: str):
         res = send_hash_list(str(self.chat_id))
         if res.state == SUCCESS_MESSAGE:
@@ -543,11 +599,11 @@ class Bot:
 
             zipped_dict = dict(zip(check_hash_list, flag_hash_list))
             zipped_items = zipped_dict.items()
-            #print(zipped_items)
+            # print(zipped_items)
 
             for i in zipped_items:
                 pass
-                #print(i)
+                # print(i)
 
     def render(self):
         return {
@@ -699,7 +755,7 @@ class Bot:
                 }
             },
             f"{ANON_CHECKOUT_ID}": {
-                "func": lambda msg: self.get_anon_hash(msg),
+                "func": lambda msg: self.anon_hash_get(msg),
                 "data": {
                     "text": "Введите хэш: ",
                 }
