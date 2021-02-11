@@ -2,9 +2,9 @@ LABEL_YES = "✅"
 LABEL_NO = "❌"
 LABEL_BACK = "↩️"
 LABEL_NEXT = "➡️️"
-LABEL_REPLENISH = "Пополнить "
-LABEL_CHECK = "сформировать чек "
-LABEL_CASH = "обналичить чек "
+LABEL_REPLENISH = "Пополнить"
+LABEL_CHECK = "Сформировать чек "
+LABEL_CASH = "Обналичить чек "
 LABEL_SEND = "Продолжить "
 LABEL_FORM_CHECK = "Персонифицированный"
 LABEL_ANON_CHECK = "Анонимный"
@@ -12,6 +12,8 @@ LABEL_GO_HOME = "⏪"
 LABEL_BALANCE = "Баланс"
 LABEL_PAYLOAD = "Вывод"
 LABEL_STAT = "Сформированные чеки"
+LABEL_ACTIVATED = "Активированные чеки"
+LABEL_NON_ACTIVATED = "Неактивированные чеки"
 
 
 CB_DATA_YES = "YES"
@@ -28,6 +30,8 @@ CB_DATA_HOME = "FORM_HOME"
 CB_DATA_BALANCE = "BALANCE"
 CB_DATA_PAYLOAD = "PAYLOAD"
 CB_DATA_STAT = "STAT"
+CB_DATA_ACTIVATED = "ACTIVATED"
+CB_DATA_NON_ACTIVATED = "NON_ACTIVATED"
 
 
 BUTTON_NO = {"callback_data": CB_DATA_NO, "text": LABEL_NO}
@@ -44,6 +48,8 @@ BUTTON_HOME = {"callback_data": CB_DATA_HOME, "text": LABEL_GO_HOME}
 BUTTON_BALANCE = {"callback_data": CB_DATA_BALANCE, "text": LABEL_BALANCE}
 BUTTON_PAYLOAD = {"callback_data": CB_DATA_PAYLOAD, "text": LABEL_PAYLOAD}
 BUTTON_STAT = {"callback_data": CB_DATA_STAT, "text": LABEL_STAT}
+BUTTON_ACTIVATED = {"callback_data": CB_DATA_ACTIVATED, "text": LABEL_ACTIVATED}
+BUTTON_NON_ACTIVATED = {"callback_data": CB_DATA_NON_ACTIVATED, "text": LABEL_NON_ACTIVATED}
 
 
 yes_or_no_keyboard = [
@@ -59,5 +65,9 @@ blockchain_keyboard = [
 ]
 check_keyboard = [
     [BUTTON_FORM_CHECK, BUTTON_ANON_CHECK],
+    [BUTTON_CUMBACK]
+]
+choice_keyboard = [
+    [BUTTON_ACTIVATED, BUTTON_NON_ACTIVATED],
     [BUTTON_CUMBACK]
 ]

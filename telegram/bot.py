@@ -8,14 +8,18 @@ from utils.fapper import Map
 from utils.is_unique import is_unique
 from api.api import get_transactions, get_user, create_user, form_user_hash, get_user_hash, \
     update_user, check_address_exists, update_user_hash, get_anon_hash, update_anon_hash, add_anon_hash, \
-    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag, get_used_hashes, send_used_hashes
+    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag, get_used_hashes, send_used_hashes, \
+    get_all_hash
 from api.rest import SUCCESS_MESSAGE
 from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockchain_keyboard, check_keyboard, \
+    choice_keyboard, \
     CB_DATA_NEXT, \
     CB_DATA_NO, CB_DATA_BACK, CB_DATA_YES, CB_DATA_HOME, BUTTON_YES, BUTTON_CUMBACK, BUTTON_HOME, CB_DATA_CASH, \
     CB_DATA_CHECK, CB_DATA_REPLENISH, \
-    CB_DATA_FORM_CHECK, CB_DATA_FORM_ANON_CHECK, CB_DATA_BALANCE, CB_DATA_PAYLOAD, CB_DATA_STAT
+    CB_DATA_FORM_CHECK, CB_DATA_FORM_ANON_CHECK, CB_DATA_BALANCE, CB_DATA_PAYLOAD, CB_DATA_STAT, CB_DATA_ACTIVATED, \
+    CB_DATA_NON_ACTIVATED
 
+NEWLINE = '\n'
 START_NODE_ID = "start_id"
 BLOCKCHAIN_NODE_ID = "blockchain_id"
 REFUSE_ID = "refuse_id"
@@ -50,6 +54,11 @@ CHOOSE_HASH_ID = "choose_hash_id"
 SEND_TO_CONTRACT_ID = "send_to_contract_id"
 CONTRACT_RESPONSE_ID = "contract_response_id"
 STATISTICS_ID = "statisitcs_id"
+EMPTY_HASH_LIST = "empty_id"
+EMPTY_ACTIVE_HASH = "none_active_id"
+ACTIVATED_HASH_ID = "activated_id"
+NON_ACTIVATED_HASH_ID = "non_activated_id"
+HASH_CHOOSE_ID = "hash_choose_id"
 
 
 def get_url(token: str, method: str):
@@ -67,6 +76,7 @@ class Bot:
         self.hash = ""
         self.sender_hash = ""
         self.payment = 0
+        self.activated = []
         self.token = token
         self.chat_id = chat_id
         self.last_message_id = None
@@ -320,50 +330,62 @@ class Bot:
         else:
             return ERROR_ID
 
-    def get_hash(self, msg: str):
+    def get_preson_hash(self, msg: str):
         self.hash = msg
-        res = get_user_hash(str(self.chat_id))
-        print(res)
+        res = get_all_hash(str(self.chat_id))
         if res.state == SUCCESS_MESSAGE:
             res_map = Map(res.data)
-            returned_hash = res_map.hash.check_hash
-            hash_balance = res_map.hash.value
-            hash_receiver = res_map.hash.receiver
-            hash_flag = res_map.hash.flag
-            print(hash_balance, hash_receiver, hash_flag, "___________________________")
-            if self.hash == returned_hash:
-                if not hash_flag:
-                    if self.bcs_address == hash_receiver:
-                        res = get_user(str(self.chat_id))
-                        if res.state == SUCCESS_MESSAGE:
-                            user_map = Map(res.data)
-                            balance = user_map.users.balance
-                            print(balance, "++")
-                            new_user_balance = update_user(str(self.chat_id), {
-                                "balance": balance + hash_balance,
-                                "bcs_address": self.bcs_address
-                            })
-                            print(new_user_balance, "[")
-                            if new_user_balance.state == SUCCESS_MESSAGE:
-                                self.balance = balance + hash_balance
-                                print(self.balance, "wwewewew")
-                                check_flag = update_user_hash(str(self.chat_id), {
-                                    "flag": True
-                                })
-                                if check_flag == SUCCESS_MESSAGE:
-                                    print(check_flag, "________________________________________")
-                                return CORRECT_HASH_ID
+            hash_list = res_map.hash
+            print(hash_list)
+            filter_by_hash = filter(lambda t: t.check_hash == self.hash, hash_list)
+            filtered_hash_list = list(filter_by_hash)
 
+            if len(filtered_hash_list) == 0:
+                print("an impressive cock")
+                return INVALID_HASH_ID
+
+            for i in filtered_hash_list:
+                print(i, "meeh")
+                values = list(i.values())
+
+                check_data = values[4]
+                receiver_data = values[3]
+                print(receiver_data)
+                res = get_used_hashes(str(self.chat_id))
+                if res.state == SUCCESS_MESSAGE:
+                    hash_map = Map(res.data)
+                    hash_in_db = hash_map.added_hash
+                    final = list(map(lambda t: t.used_hash, hash_in_db))
+                    print(final)
+
+                    if self.hash not in final:
+                        if self.bcs_address == receiver_data:
+                            res = get_user(str(self.chat_id))
+                            if res.state == SUCCESS_MESSAGE:
+                                user_map = Map(res.data)
+                                balance = user_map.users.balance
+
+                                new_user_balance = update_user(str(self.chat_id), {
+                                    "balance": balance + check_data,
+                                    "bcs_address": self.bcs_address
+                                })
+                                if new_user_balance.state == SUCCESS_MESSAGE:
+                                    self.balance = balance + check_data
+                                    res = send_used_hashes(str(self.chat_id), {
+                                        "used_hashes": self.hash
+                                    })
+                                    if res.state == SUCCESS_MESSAGE:
+                                        return CORRECT_HASH_ID
+                                else:
+                                    return ERROR_ID
                             else:
                                 return ERROR_ID
                         else:
-                            return ERROR_ID
+                            return INVALID_USER_ID
                     else:
-                        return ERROR_ID
+                        return INVALID_FLAG_ID
                 else:
-                    return INVALID_FLAG_ID
-            else:
-                return INVALID_HASH_ID
+                    return ERROR_ID
         else:
             return ERROR_ID
 
@@ -377,7 +399,6 @@ class Bot:
         })
         if new_user_hash.state == SUCCESS_MESSAGE:
             res = get_anon_hash(str(self.chat_id))
-            print(res, "____________________________________________-")
             if res.state == SUCCESS_MESSAGE:
                 res_map = Map(res.data)
                 print(res_map)
@@ -434,7 +455,6 @@ class Bot:
                     print(i, "meeh")
                     values = list(i.values())
                     print(values)
-                    hash_from_list = values[0]
                     value_data = values[3]
                     res = get_used_hashes(str(self.chat_id))
                     if res.state == SUCCESS_MESSAGE:
@@ -456,12 +476,10 @@ class Bot:
                                 })
                                 if new_user_balance.state == SUCCESS_MESSAGE:
                                     self.balance = balance + value_data
-                                    print(self.balance, "wwewewew")
                                     res = send_used_hashes(str(self.chat_id), {
                                         "used_hashes": self.hash
                                     })
                                     if res.state == SUCCESS_MESSAGE:
-
                                         return CORRECT_HASH_ID
                                 else:
                                     return ERROR_ID
@@ -471,53 +489,6 @@ class Bot:
                             return INVALID_FLAG_ID
                     else:
                         return ERROR_ID
-        else:
-            return ERROR_ID
-
-    def get_anon_hash(self, msg: str):
-        self.hash = msg
-        res = get_anon_hash(str(self.chat_id))
-        print(res)
-        if res.state == SUCCESS_MESSAGE:
-            res_map = Map(res.data)
-            anon_check = res_map.hash
-            returned_hash = res_map.hash.check_hash
-            hash_balance = res_map.hash.value
-            hash_flag = res_map.hash.flag
-            print(anon_check)
-            print(hash_flag, "___________________________")
-            print(self.hash, "Self hash")
-            print(returned_hash, "REturned hash ")
-
-            if self.hash == returned_hash:
-                if not hash_flag:
-                    res = get_user(str(self.chat_id))
-                    if res.state == SUCCESS_MESSAGE:
-                        user_map = Map(res.data)
-                        balance = user_map.users.balance
-
-                        new_user_balance = update_user(str(self.chat_id), {
-                            "balance": balance + hash_balance,
-                            "bcs_address": self.bcs_address
-                        })
-                        if new_user_balance.state == SUCCESS_MESSAGE:
-                            self.balance = balance + hash_balance
-                            print(self.balance, "wwewewew")
-                            check_flag = update_anon_hash(str(self.chat_id), {
-                                "flag": True
-                            })
-                            if check_flag == SUCCESS_MESSAGE:
-                                print(check_flag, "FLAAAAAAAAAAAAAAAAAAAAAAAG")
-                            return CORRECT_HASH_ID
-
-                        else:
-                            return ERROR_ID
-                    else:
-                        return ERROR_ID
-                else:
-                    return INVALID_FLAG_ID
-            else:
-                return INVALID_HASH_ID
         else:
             return ERROR_ID
 
@@ -568,13 +539,36 @@ class Bot:
 
     def send_person_hash(self, msg: str):
         # map, list, for loop  and other stuff
-        res = send_hash_and_flag(str(self.chat_id))
+        res = get_all_hash(str(self.chat_id))
         if res.state == SUCCESS_MESSAGE:
             res_map = Map(res.data)
-            user_hash = res_map.hash_flag
-            user_hash_filter = filter(lambda t: t.check_hash == self.hash, user_hash)
-            user_hash_list = list(user_hash_filter)
-            print(user_hash_list)
+            hash_list = res_map.hash
+            map_by_hash = list(map(lambda t: t.check_hash, hash_list))
+            print(map_by_hash)
+
+            if len(map_by_hash) == 0:
+                return EMPTY_HASH_LIST
+            else:
+                res = get_used_hashes(str(self.chat_id))
+                if res.state == SUCCESS_MESSAGE:
+                    res_map = Map(res.data)
+                    used_hash_list = res_map.added_hash
+                    mapped_hash_list = list(map(lambda t: t.used_hash, used_hash_list))
+                    print(mapped_hash_list)
+                    if len(mapped_hash_list) == 0:
+                        return EMPTY_ACTIVE_HASH
+                    else:
+                        for i in mapped_hash_list:
+                            if i in mapped_hash_list:
+                                self.activated.append(i)
+                            else:
+                                return ERROR_ID
+
+                        return ACTIVATED_HASH_ID
+                else:
+                    return ERROR_ID
+        else:
+            return ERROR_ID
 
     def send_anon_hash(self, msg: str):
         res = send_hash_list(str(self.chat_id))
@@ -689,7 +683,7 @@ class Bot:
                 }
             },
             f"{INVALID_USER_ID}": {
-                "func": lambda msg: USERS_CHECK_NODE_ID if msg == CB_DATA_BACK else None,
+                "func": lambda msg: BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
                 "data": {
                     "text": "Этого пользователя не существует в базе. Пожалуйста вернитесь назад",
                     "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
@@ -749,7 +743,7 @@ class Bot:
                 }
             },
             f"{CHECKOUT_ID}": {
-                "func": lambda msg: self.get_hash(msg),
+                "func": lambda msg: self.get_preson_hash(msg),
                 "data": {
                     "text": "Введите хэш: ",
                 }
@@ -805,12 +799,49 @@ class Bot:
                 }
             },
             f"{STATISTICS_ID}": {
-                "func": lambda msg: self.send_person_hash(msg) if msg == CB_DATA_FORM_CHECK
-                else self.send_anon_hash(msg) if msg == CB_DATA_FORM_ANON_CHECK
+                "func": lambda msg: ACTIVATED_HASH_ID if msg == CB_DATA_FORM_CHECK
+                else NON_ACTIVATED_HASH_ID if msg == CB_DATA_FORM_ANON_CHECK
                 else BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
                 "data": {
                     "text": "Выберите тип чека: ",
                     "reply_markup": {"inline_keyboard": check_keyboard},
+                }
+            },
+            f"{EMPTY_HASH_LIST}": {
+                "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": "Вы пока не сформировали ни одного чека",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
+                }
+            },
+            f"{EMPTY_ACTIVE_HASH}": {
+                "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": "Вы пока не активировали ни одного чека",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
+                }
+            },
+            f"{HASH_CHOOSE_ID}": {
+              "func": lambda msg: ACTIVATED_HASH_ID if msg == CB_DATA_ACTIVATED
+              else NON_ACTIVATED_HASH_ID if msg == CB_DATA_NON_ACTIVATED
+              else STATISTICS_ID if msg == CB_DATA_BACK else None,
+              "data": {
+                    "text": "Здесь можно посмотреть активированные чеки.",
+                    "reply_markup": {"inline_keyboard": choice_keyboard},
+                }
+            },
+            f"{ACTIVATED_HASH_ID}": {
+              "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
+              "data": {
+                  "text": f"{NEWLINE.join(self.activated)}",
+                  "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]},
+              }
+            },
+            f"{NON_ACTIVATED_HASH_ID}": {
+                "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": f"{NEWLINE.join(self.activated)}",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]},
                 }
             },
             f"{ERROR_ID}": {

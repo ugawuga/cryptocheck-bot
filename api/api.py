@@ -25,6 +25,10 @@ def update_user_hash(chat_id: str, data: object):
     return Rest.put(BASE_API_URL + '/user/updatehash/' + chat_id, data)
 
 
+def get_all_hash(chat_id: str):
+    return Rest.get(BASE_API_URL + "/user/get/phash/" + chat_id)
+
+
 """for users in tabtables"""
 def get_users():
     return Rest.get(BASE_API_URL + '/users')
