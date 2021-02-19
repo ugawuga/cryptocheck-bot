@@ -91,11 +91,19 @@ def send_hash_and_flag(chat_id: str):
     return Rest.get(BASE_API_URL + "/user/get/hash/flag/" + chat_id)
 
 
-"""for used hashes"""
-def get_used_hashes(chat_id: str):
+"""for private used hashes"""
+def get_used_private(chat_id: str):
     return Rest.get(BASE_API_URL + "/user/used/hash/" + chat_id)
 
 
-def send_used_hashes(chat_id: str, data: object):
+def send_used_private(chat_id: str, data: object):
     return Rest.post(BASE_API_URL + "/user/add/hash/" + chat_id, data)
 
+
+"""for person used hashes"""
+def get_person_hash(chat_id: str):
+    return Rest.get(BASE_API_URL + "/user/used/person/" + chat_id)
+
+
+def put_person_hash(chat_id: str, data: object):
+    return Rest.post(BASE_API_URL + "/user/add/person/" + chat_id, data)

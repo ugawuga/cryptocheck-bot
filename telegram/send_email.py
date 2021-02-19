@@ -2,11 +2,12 @@ import smtplib
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from telegram.bcs_config import EMAIL, PASSWORD
 
 
 def send_email(addr_to, msg_subj, msg_text):
-    addr_from = "block.tech@mail.ru"
-    password = "qawsedqwerty"
+    addr_from = EMAIL
+    password = PASSWORD
 
     msg = MIMEMultipart()
     msg["From"] = addr_from

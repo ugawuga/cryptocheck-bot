@@ -8,8 +8,8 @@ from utils.fapper import Map
 from utils.is_unique import is_unique
 from api.api import get_transactions, get_user, create_user, form_user_hash, get_user_hash, \
     update_user, check_address_exists, update_user_hash, get_anon_hash, update_anon_hash, add_anon_hash, \
-    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag, get_used_hashes, send_used_hashes, \
-    get_all_hash
+    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag, get_used_private, send_used_private, \
+    get_all_hash, put_person_hash, get_person_hash
 from api.rest import SUCCESS_MESSAGE
 from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockchain_keyboard, check_keyboard, \
     choice_keyboard, \
@@ -17,7 +17,7 @@ from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockch
     CB_DATA_NO, CB_DATA_BACK, CB_DATA_YES, CB_DATA_HOME, BUTTON_YES, BUTTON_CUMBACK, BUTTON_HOME, CB_DATA_CASH, \
     CB_DATA_CHECK, CB_DATA_REPLENISH, \
     CB_DATA_FORM_CHECK, CB_DATA_FORM_ANON_CHECK, CB_DATA_BALANCE, CB_DATA_PAYLOAD, CB_DATA_STAT, CB_DATA_ACTIVATED, \
-    CB_DATA_NON_ACTIVATED
+    CB_DATA_NON_ACTIVATED, BUTTON_NEXT
 
 NEWLINE = '\n'
 START_NODE_ID = "start_id"
@@ -59,6 +59,12 @@ EMPTY_ACTIVE_HASH = "none_active_id"
 ACTIVATED_HASH_ID = "activated_id"
 NON_ACTIVATED_HASH_ID = "non_activated_id"
 HASH_CHOOSE_ID = "hash_choose_id"
+EMPTY_NON_ACTIVE_HASH = "empty_non_active_id"
+ANON_HASH_CHOOSE_ID = "anon_id"
+OTHER_PAGE_ID = "other_page_id"
+ACTIVATED_PRIVATE_HASH_ID = "activated_private_id"
+NON_ACTIVATED_PRIVATE_HASH_ID = "non_activated_private_id"
+ANOTHER_PAGE_ID = "another_page_id"
 
 
 def get_url(token: str, method: str):
@@ -77,6 +83,9 @@ class Bot:
         self.sender_hash = ""
         self.payment = 0
         self.activated = []
+        self.non_activated = []
+        self.p_activated = []
+        self.non_p_activated = []
         self.token = token
         self.chat_id = chat_id
         self.last_message_id = None
@@ -123,14 +132,7 @@ class Bot:
             self.go_to_node(node=next_id)
 
     def get_bcs_address(self, msg: str):
-        print(r"""                 /\
-            ____/__\____
-            \  /    \  /
-             \/      \/
-             /\      /\
-            /__\____/__\
-                \  /
-                 \/""")
+
         if not re.match(r"B.{33}", msg):
             return INVALID_ID
 
@@ -146,6 +148,14 @@ class Bot:
                 "balance": 0
             })
             if new_user_res.state == SUCCESS_MESSAGE:
+                print(r"""       /\
+                            ____/__\____
+                            \  /    \  /
+                             \/      \/
+                             /\      /\
+                            /__\____/__\
+                                \  /
+                                 \/""")
                 return GO_BACK_ID
             else:
                 return ERROR_ID
@@ -169,7 +179,9 @@ class Bot:
         global is_valid, balance_sum
         if msg == CB_DATA_BACK:
             return BLOCKCHAIN_NODE_ID
-        res = get_transactions("BNYRnkPPkRuPmtwQWexpQ1ECXgYdFMPL9H", "a3c3077f9c5c9e522534f529559dd14d07830ed4")
+        res = get_transactions(self.bcs_address, "a3c3077f9c5c9e522534f529559dd14d07830ed4")
+        print(res, "res")
+        print(res.state, "res state")
         if res.state == SUCCESS_MESSAGE:
             res_map = Map(res.data)
             transactions = res_map.transactions
@@ -240,25 +252,27 @@ class Bot:
 
             is_valid = found_transaction is not None
 
-        if is_valid:
-            print(self.bcs_address, "ADDRESS")
-            res = get_user(str(self.chat_id))
-            if res.state == SUCCESS_MESSAGE:
-                res_map = Map(res.data)
-                self.balance = res_map.users.balance
-            else:
-                return ERROR_ID
+            if is_valid:
+                print(self.bcs_address, "ADDRESS")
+                res = get_user(str(self.chat_id))
+                if res.state == SUCCESS_MESSAGE:
+                    res_map = Map(res.data)
+                    self.balance = res_map.users.balance
+                else:
+                    return ERROR_ID
 
-            res = update_user(str(self.chat_id), {
-                "balance": balance_sum + self.balance,
-                "bcs_address": self.bcs_address
-            })
-            if res.state == SUCCESS_MESSAGE:
-                return FORM_CHECK_ID
+                res = update_user(str(self.chat_id), {
+                    "balance": balance_sum + self.balance,
+                    "bcs_address": self.bcs_address
+                })
+                if res.state == SUCCESS_MESSAGE:
+                    return FORM_CHECK_ID
+                else:
+                    return ERROR_ID
             else:
-                return ERROR_ID
+                return FORM_WRONG_ID
         else:
-            return FORM_WRONG_ID
+            return ERROR_ID
 
     def enter_balance(self, msg: str):
         self.payment = int(msg)
@@ -351,7 +365,7 @@ class Bot:
                 check_data = values[4]
                 receiver_data = values[3]
                 print(receiver_data)
-                res = get_used_hashes(str(self.chat_id))
+                res = get_person_hash(str(self.chat_id))
                 if res.state == SUCCESS_MESSAGE:
                     hash_map = Map(res.data)
                     hash_in_db = hash_map.added_hash
@@ -371,7 +385,7 @@ class Bot:
                                 })
                                 if new_user_balance.state == SUCCESS_MESSAGE:
                                     self.balance = balance + check_data
-                                    res = send_used_hashes(str(self.chat_id), {
+                                    res = put_person_hash(str(self.chat_id), {
                                         "used_hashes": self.hash
                                     })
                                     if res.state == SUCCESS_MESSAGE:
@@ -456,7 +470,7 @@ class Bot:
                     values = list(i.values())
                     print(values)
                     value_data = values[3]
-                    res = get_used_hashes(str(self.chat_id))
+                    res = get_used_private(str(self.chat_id))
                     if res.state == SUCCESS_MESSAGE:
                         hash_map = Map(res.data)
                         hash_in_db = hash_map.added_hash
@@ -476,7 +490,7 @@ class Bot:
                                 })
                                 if new_user_balance.state == SUCCESS_MESSAGE:
                                     self.balance = balance + value_data
-                                    res = send_used_hashes(str(self.chat_id), {
+                                    res = send_used_private(str(self.chat_id), {
                                         "used_hashes": self.hash
                                     })
                                     if res.state == SUCCESS_MESSAGE:
@@ -537,67 +551,135 @@ class Bot:
         else:
             return ERROR_ID
 
-    def send_person_hash(self, msg: str):
+    def send_person_ahash(self, msg: str):
         # map, list, for loop  and other stuff
         res = get_all_hash(str(self.chat_id))
         if res.state == SUCCESS_MESSAGE:
             res_map = Map(res.data)
             hash_list = res_map.hash
             map_by_hash = list(map(lambda t: t.check_hash, hash_list))
-            print(map_by_hash)
+            print(map_by_hash, "HASH LIST")
 
             if len(map_by_hash) == 0:
                 return EMPTY_HASH_LIST
             else:
-                res = get_used_hashes(str(self.chat_id))
+                res = get_person_hash(str(self.chat_id))
                 if res.state == SUCCESS_MESSAGE:
                     res_map = Map(res.data)
                     used_hash_list = res_map.added_hash
                     mapped_hash_list = list(map(lambda t: t.used_hash, used_hash_list))
-                    print(mapped_hash_list)
-                    if len(mapped_hash_list) == 0:
-                        return EMPTY_ACTIVE_HASH
-                    else:
-                        for i in mapped_hash_list:
-                            if i in mapped_hash_list:
-                                self.activated.append(i)
-                            else:
-                                return ERROR_ID
+                    print(mapped_hash_list, "MAPPED LIST")
 
-                        return ACTIVATED_HASH_ID
+                    person_active_list = []
+                    for i in map_by_hash:
+                        print(i, "i values")
+                        if i in mapped_hash_list:
+                            if i not in self.activated:
+                                person_active_list.append(i)
+                                self.activated = list(filter(lambda t: t not in self.non_activated, person_active_list))
+                                print(self.activated)
+
+                    return ACTIVATED_HASH_ID
                 else:
                     return ERROR_ID
         else:
             return ERROR_ID
 
-    def send_anon_hash(self, msg: str):
+    def send_person_nhash(self, msg: str):
+        res = get_all_hash(str(self.chat_id))
+        if res.state == SUCCESS_MESSAGE:
+            res_map = Map(res.data)
+            hash_list = res_map.hash
+            map_by_hash = list(map(lambda t: t.check_hash, hash_list))
+            print(map_by_hash, "HASH LIST")
+
+            if len(map_by_hash) == 0:
+                return EMPTY_HASH_LIST
+            else:
+                res = get_person_hash(str(self.chat_id))
+                if res.state == SUCCESS_MESSAGE:
+                    res_map = Map(res.data)
+                    used_hash_list = res_map.added_hash
+                    mapped_hash_list = list(map(lambda t: t.used_hash, used_hash_list))
+                    print(mapped_hash_list, "MAP LIST")
+
+                    use_list = []
+                    for i in map_by_hash:
+                        print(i, "person n i")
+                        if i not in mapped_hash_list:
+                            if i not in self.non_activated:
+                                use_list.append(i)
+                                self.non_activated = list(filter(lambda t: t not in self.activated, use_list))
+                                print(self.non_activated)
+                    return NON_ACTIVATED_HASH_ID
+                else:
+                    return ERROR_ID
+        else:
+            return ERROR_ID
+
+    def send_anon_ahash(self, msg: str):
         res = send_hash_list(str(self.chat_id))
         if res.state == SUCCESS_MESSAGE:
             res_map = Map(res.data)
-            user_hash = res_map.hash
+            hash_list = res_map.hash
+            map_by_hash = list(map(lambda t: t.check_hash, hash_list))
+            print(map_by_hash, "HASH LIST ANON")
 
-            for i in user_hash:
-                if i is not None:
-                    user_hash_items = list(i.values())
-                    print(user_hash_items)
-                    hash_hash = user_hash_items[0:2]
-                    print(hash_hash)
+            if len(map_by_hash) == 0:
+                return EMPTY_HASH_LIST
+            else:
+                res = get_used_private(str(self.chat_id))
+                if res.state == SUCCESS_MESSAGE:
+                    res_map = Map(res.data)
+                    used_hash_list = res_map.added_hash
+                    mapped_hash_list = list(map(lambda t: t.used_hash, used_hash_list))
+                    print(mapped_hash_list, "ALL HASH")
 
+                    anon_used_list = []
+                    for i in map_by_hash:
+                        print(i, "i anon active")
+                        if i in mapped_hash_list:
+                            anon_used_list.append(i)
+                            self.p_activated = anon_used_list
+                            print(self.p_activated)
+
+                    return ACTIVATED_PRIVATE_HASH_ID
                 else:
                     return ERROR_ID
-            check_hash_map = map(lambda c: c.check_hash, user_hash)
-            check_hash_list = list(check_hash_map)
+        else:
+            return ERROR_ID
 
-            flag_hash_map = map(lambda f: f.flag, user_hash)
-            flag_hash_list = reversed(list(flag_hash_map))
+    def send_anon_nhash(self, msg: str):
+        res = send_hash_list(str(self.chat_id))
+        if res.state == SUCCESS_MESSAGE:
+            res_map = Map(res.data)
+            hash_list = res_map.hash
+            map_by_hash = list(map(lambda t: t.check_hash, hash_list))
+            print(map_by_hash, "SEND NHASH")
 
-            zipped_dict = dict(zip(check_hash_list, flag_hash_list))
-            zipped_items = zipped_dict.items()
-            # print(zipped_items)
+            if len(map_by_hash) == 0:
+                return EMPTY_HASH_LIST
+            else:
+                res = get_used_private(str(self.chat_id))
+                if res.state == SUCCESS_MESSAGE:
+                    res_map = Map(res.data)
+                    used_hash_list = res_map.added_hash
+                    mapped_hash_list = list(map(lambda t: t.used_hash, used_hash_list))
+                    print(mapped_hash_list, "ALL HASH")
 
-            for i in zipped_items:
-                pass
-                # print(i)
+                    used_list = []
+                    for i in map_by_hash:
+                        print(i, "values")
+                        if i not in mapped_hash_list:
+                            if i not in self.non_p_activated:
+                                used_list.append(i)
+                                self.non_p_activated = list(filter(lambda t: t not in self.p_activated, used_list))
+                                print(self.non_p_activated)
+                    return NON_ACTIVATED_PRIVATE_HASH_ID
+                else:
+                    return ERROR_ID
+        else:
+            return ERROR_ID
 
     def render(self):
         return {
@@ -799,8 +881,8 @@ class Bot:
                 }
             },
             f"{STATISTICS_ID}": {
-                "func": lambda msg: ACTIVATED_HASH_ID if msg == CB_DATA_FORM_CHECK
-                else NON_ACTIVATED_HASH_ID if msg == CB_DATA_FORM_ANON_CHECK
+                "func": lambda msg: HASH_CHOOSE_ID if msg == CB_DATA_FORM_CHECK
+                else ANON_HASH_CHOOSE_ID if msg == CB_DATA_FORM_ANON_CHECK
                 else BLOCKCHAIN_NODE_ID if msg == CB_DATA_BACK else None,
                 "data": {
                     "text": "Выберите тип чека: ",
@@ -821,27 +903,89 @@ class Bot:
                     "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
                 }
             },
+            f"{EMPTY_NON_ACTIVE_HASH}": {
+                "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": "На вашем аккаунте нет неактивированных чеков",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
+                }
+            },
             f"{HASH_CHOOSE_ID}": {
-              "func": lambda msg: ACTIVATED_HASH_ID if msg == CB_DATA_ACTIVATED
-              else NON_ACTIVATED_HASH_ID if msg == CB_DATA_NON_ACTIVATED
-              else STATISTICS_ID if msg == CB_DATA_BACK else None,
-              "data": {
-                    "text": "Здесь можно посмотреть активированные чеки.",
+                "func": lambda msg: self.send_person_ahash(msg) if msg == CB_DATA_ACTIVATED
+                else self.send_person_nhash(msg) if msg == CB_DATA_NON_ACTIVATED
+                else STATISTICS_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": "Здесь можно посмотреть активированные и \n "
+                            "неактивированные чеки персонифицированные чеки.",
                     "reply_markup": {"inline_keyboard": choice_keyboard},
                 }
             },
+            f"{ANON_HASH_CHOOSE_ID}": {
+                "func": lambda msg: self.send_anon_ahash(msg) if msg == CB_DATA_ACTIVATED
+                else self.send_anon_nhash(msg) if msg == CB_DATA_NON_ACTIVATED
+                else STATISTICS_ID if msg == CB_DATA_BACK else BLOCKCHAIN_NODE_ID if msg == CB_DATA_HOME else None,
+                "data": {
+                    "text": "Здесь можно посмотреть активированные чеки и \n "
+                            "неактивированные чеки приватные чеки.",
+                    "reply_markup": {"inline_keyboard": choice_keyboard}
+                }
+            },
             f"{ACTIVATED_HASH_ID}": {
-              "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
-              "data": {
-                  "text": f"{NEWLINE.join(self.activated)}",
-                  "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]},
-              }
+                "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK
+                else OTHER_PAGE_ID if msg == CB_DATA_NEXT else None,
+                "data": {
+                    "text": f"Использованные чеки: \n"
+                            f"{NEWLINE.join(self.activated[0:10])} \n "
+                            f"Отображаются первые 10 чеков",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK], [BUTTON_NEXT]]},
+                }
+            },
+            f"{OTHER_PAGE_ID}": {
+                "func": lambda msg: ACTIVATED_HASH_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": f"Использованные чеки: \n"
+                            f"{NEWLINE.join(self.activated[10:-1])} \n"
+                            f"Отображаются оставшиеся чеки",
+                    "reply_markup": {"inline_keyboard": [BUTTON_CUMBACK]}
+                }
             },
             f"{NON_ACTIVATED_HASH_ID}": {
                 "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
                 "data": {
-                    "text": f"{NEWLINE.join(self.activated)}",
+                    "text": f"Неиспользованные чеки: \n"
+                            f"{NEWLINE.join(self.non_activated)} \n"
+                            f"Если видите здесь чек, который был использован, просто создайте новый чек "
+                            f"или перезайдите на свой аккаунт",
                     "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]},
+                }
+            },
+            f"{ACTIVATED_PRIVATE_HASH_ID}": {
+                "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK
+                else OTHER_PAGE_ID if msg == CB_DATA_NEXT else None,
+                "data": {
+                    "text": f"Использованные чеки: \n"
+                            f"{NEWLINE.join(self.p_activated[0:10])} \n "
+                            f"Отображаются первые 10 чеков",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK], [BUTTON_NEXT]]},
+                }
+            },
+            f"{NON_ACTIVATED_PRIVATE_HASH_ID}": {
+                "func": lambda msg: STATISTICS_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": f"Неиспользованные чеки: \n"
+                            f"{NEWLINE.join(self.non_p_activated)} \n"
+                            f"Если видите здесь чек, который был использован, просто создайте новый чек "
+                            f"или перезайдите на свой аккаунт",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]},
+                }
+            },
+            f"{ANOTHER_PAGE_ID}": {
+                "func": lambda msg: ACTIVATED_HASH_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": f"Использованные чеки: \n"
+                            f"{NEWLINE.join(self.p_activated[10:-1])} \n"
+                            f"Отображаются оставшиеся чеки ",
+                    "reply_markup": {"inline_keyboard": [BUTTON_CUMBACK]}
                 }
             },
             f"{ERROR_ID}": {
