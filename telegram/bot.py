@@ -165,14 +165,6 @@ class Bot:
                 "balance": 0
             })
             if new_user_res.state == SUCCESS_MESSAGE:
-                print(r"""       /\
-                            ____/__\____
-                            \  /    \  /
-                             \/      \/
-                             /\      /\
-                            /__\____/__\
-                                \  /
-                                 \/""")
                 return GO_BACK_ID
             else:
                 return ERROR_ID
@@ -193,6 +185,7 @@ class Bot:
             return ERROR_ID
 
     def check_transaction(self, msg: str):
+        global balance_sum
         if msg == CB_DATA_BACK:
             return BLOCKCHAIN_NODE_ID
         res = get_transactions(self.bcs_address, self.address_contract)
@@ -211,7 +204,6 @@ class Bot:
 
             for i in user_transaction_ids_list:
                 if i is not None:
-                    print(i, "------------------------------")
                     print("add transactions")
                     new_transactions = add_user_transaction(str(self.chat_id), {
                         "transaction_id": i,
