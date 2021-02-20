@@ -9,7 +9,7 @@ from utils.is_unique import is_unique
 from api.api import get_transactions, get_user, create_user, form_user_hash, get_user_hash, \
     update_user, check_address_exists, update_user_hash, get_anon_hash, update_anon_hash, add_anon_hash, \
     get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag, get_used_private, send_used_private, \
-    get_all_hash, put_person_hash, get_person_hash
+    get_all_hash, put_person_hash, get_person_hash, get_address_contract
 from api.rest import SUCCESS_MESSAGE
 from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockchain_keyboard, check_keyboard, \
     choice_keyboard, \
@@ -21,6 +21,8 @@ from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockch
 
 NEWLINE = '\n'
 START_NODE_ID = "start_id"
+CONTRACT_ID = "contract_id"
+WRONG_CONTRACT_ID = "wrong_contract_id"
 BLOCKCHAIN_NODE_ID = "blockchain_id"
 REFUSE_ID = "refuse_id"
 ADDRESS_NODE_ID = "address_node_id"
@@ -81,6 +83,7 @@ class Bot:
         self.balance = 0
         self.hash = ""
         self.sender_hash = ""
+        self.address_contract = ""
         self.payment = 0
         self.activated = []
         self.non_activated = []
@@ -131,6 +134,20 @@ class Bot:
         if next_id is not None:
             self.go_to_node(node=next_id)
 
+    def get_address_contract(self, msg:str):
+        self.address_contract = msg
+        res = get_address_contract()
+        if res.state == SUCCESS_MESSAGE:
+            res_map = Map(res.data)
+            addreses = res_map.address
+            relate = list(filter(lambda t: t.address_contract == self.address_contract, addreses))
+            if len(relate) == 0:
+                return WRONG_CONTRACT_ID
+            else:
+                return ADDRESS_NODE_ID
+        else:
+            return ERROR_ID
+
     def get_bcs_address(self, msg: str):
 
         if not re.match(r"B.{33}", msg):
@@ -176,12 +193,9 @@ class Bot:
             return ERROR_ID
 
     def check_transaction(self, msg: str):
-        global is_valid, balance_sum
         if msg == CB_DATA_BACK:
             return BLOCKCHAIN_NODE_ID
-        res = get_transactions(self.bcs_address, "a3c3077f9c5c9e522534f529559dd14d07830ed4")
-        print(res, "res")
-        print(res.state, "res state")
+        res = get_transactions(self.bcs_address, self.address_contract)
         if res.state == SUCCESS_MESSAGE:
             res_map = Map(res.data)
             transactions = res_map.transactions
@@ -543,7 +557,7 @@ class Bot:
                         return CONTRACT_RESPONSE_ID
                     else:
                         send_tokens = send_to_contract_request(self.bcs_address, self.payment,
-                                                               "a3c3077f9c5c9e522534f529559dd14d07830ed4")
+                                                               self.address_contract)
                         print(send_tokens)
                         return CONTRACT_RESPONSE_ID
                 else:
@@ -574,10 +588,9 @@ class Bot:
                     for i in map_by_hash:
                         print(i, "i values")
                         if i in mapped_hash_list:
-                            if i not in self.activated:
-                                person_active_list.append(i)
-                                self.activated = list(filter(lambda t: t not in self.non_activated, person_active_list))
-                                print(self.activated)
+                            person_active_list.append(i)
+                    self.activated = person_active_list
+                    print(self.activated)
 
                     return ACTIVATED_HASH_ID
                 else:
@@ -674,7 +687,7 @@ class Bot:
                             if i not in self.non_p_activated:
                                 used_list.append(i)
                                 self.non_p_activated = list(filter(lambda t: t not in self.p_activated, used_list))
-                                print(self.non_p_activated)
+
                     return NON_ACTIVATED_PRIVATE_HASH_ID
                 else:
                     return ERROR_ID
@@ -692,11 +705,24 @@ class Bot:
                 }
             },
             f"{START_NODE_ID}": {
-                "func": lambda msg: ADDRESS_NODE_ID if msg == CB_DATA_YES else REFUSE_ID if msg == CB_DATA_NO else None,
+                "func": lambda msg: CONTRACT_ID if msg == CB_DATA_YES else REFUSE_ID if msg == CB_DATA_NO else None,
                 "data": {
                     "text": "это тестовый бот BCS. Для начала работы необходимо привязать BCS адресс к боту \n"
                             "У вас есть bcs-address? ",
                     "reply_markup": {"inline_keyboard": yes_or_no_keyboard}
+                }
+            },
+            f"{CONTRACT_ID}": {
+               "func": lambda msg: self.get_address_contract(msg),
+               "data": {
+                    "text": "Введите адресс вашего контракта"
+                }
+            },
+            f"{WRONG_CONTRACT_ID}" : {
+                "func": lambda msg: CONTRACT_ID if msg == CB_DATA_BACK else None,
+                "data": {
+                    "text": "Вы ввели некорректный адресс контракта",
+                    "reply_markup": {"inline_keyboard": [[BUTTON_CUMBACK]]}
                 }
             },
             f"{ADDRESS_NODE_ID}": {

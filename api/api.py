@@ -107,3 +107,8 @@ def get_person_hash(chat_id: str):
 
 def put_person_hash(chat_id: str, data: object):
     return Rest.post(BASE_API_URL + "/user/add/person/" + chat_id, data)
+
+
+"""for contract address"""
+def get_address_contract():
+    return Rest.get(BASE_API_URL + '/user/address/')
