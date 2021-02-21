@@ -17,8 +17,7 @@ jobs:
             mkdir ~/.ssh
             echo "$remote_key" > ~/.ssh/gh_key
             chmod 600 ~/.ssh/gh_key
-            ssh -o StrictHostKeyChecking=no -i ~/.ssh/gh_key -t ${remote_user}@${remote_host}
-#            rsync -avzr --exclude ".git*" -e "ssh -p ${remote_port} -i ~/.ssh/gh_key -o StrictHostKeyChecking=no" ${local_dir} ${remote_user}@${remote_host}:${remote_dir}
+            rsync -avzr --exclude ".git*" -e "ssh -p ${remote_port} -i ~/.ssh/gh_key -o StrictHostKeyChecking=no" ${local_dir} ${remote_user}@${remote_host}:${remote_dir}
           env:
             remote_host: ${{ secrets.DEV_HOST }}
             remote_port: ${{ secrets.DEV_PORT }}
