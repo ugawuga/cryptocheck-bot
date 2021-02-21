@@ -4,7 +4,6 @@ from telegram.bot import Bot, get_url
 from command import command_start
 import os
 from dotenv import load_dotenv
-from pyngrok import ngrok
 
 load_dotenv()
 
