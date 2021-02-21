@@ -469,7 +469,6 @@ class Bot:
                 print("an impressive cock")
                 return INVALID_HASH_ID
             else:
-                print(filtered_hash_list, "оооооооооооооооооооооооооооооооооооооооооо3")
 
                 for i in filtered_hash_list:
                     print(i, "meeh")
