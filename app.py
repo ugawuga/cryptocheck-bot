@@ -4,14 +4,15 @@ from telegram.bot import Bot, get_url
 from command import command_start
 import os
 from dotenv import load_dotenv
+#from pyngrok import ngrok
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 
-# Set up local tunnel
-#tunnel = ngrok.connect(5000)
-# res = requests.post(get_url(TOKEN, "setWebhook"), json={"ip": "195.201.121.135"})
+#Set up local tunnel
+# tunnel = ngrok.connect(5000)
+# res = requests.post(get_url(TOKEN, "setWebhook"), json={"url": tunnel.public_url.replace("http", "https")})
 # if not res.json()["ok"]:
 #     exit(1)
 # End of local tunnel setting up
