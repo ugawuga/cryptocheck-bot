@@ -11,9 +11,9 @@ TOKEN = os.getenv("TOKEN")
 
 # Set up local tunnel
 #tunnel = ngrok.connect(5000)
-res = requests.post(get_url(TOKEN, "setWebhook"), json={"ip": "195.201.121.135"})
-if not res.json()["ok"]:
-    exit(1)
+# res = requests.post(get_url(TOKEN, "setWebhook"), json={"ip": "195.201.121.135"})
+# if not res.json()["ok"]:
+#     exit(1)
 # End of local tunnel setting up
 
 app = Flask(__name__)
