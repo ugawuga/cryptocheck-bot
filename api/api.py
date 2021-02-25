@@ -21,10 +21,6 @@ def get_user_hash(chat_id: str):
     return Rest.get(BASE_API_URL + '/user/hash/' + chat_id)
 
 
-def update_user_hash(chat_id: str, data: object):
-    return Rest.put(BASE_API_URL + '/user/updatehash/' + chat_id, data)
-
-
 def get_all_hash(chat_id: str):
     return Rest.get(BASE_API_URL + "/user/get/phash/" + chat_id)
 
@@ -79,16 +75,8 @@ def add_anon_hash(chat_id: str, data: object):
     return Rest.post(BASE_API_URL + "/user/form/anonhash/" + chat_id, data)
 
 
-def update_anon_hash(chat_id: str, data: object):
-    return Rest.put(BASE_API_URL + "/user/update/anonhash/" + chat_id, data)
-
-
 def send_hash_list(chat_id: str):
     return Rest.get(BASE_API_URL + "/user/get/hashlist/" + chat_id)
-
-
-def send_hash_and_flag(chat_id: str):
-    return Rest.get(BASE_API_URL + "/user/get/hash/flag/" + chat_id)
 
 
 """for private used hashes"""

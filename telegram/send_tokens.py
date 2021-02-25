@@ -1,7 +1,7 @@
 import json
 import requests
 from telegram import bcs_config
-#import bcs_config
+import bcs_config
 
 
 def jsonrpc_request(method, params):

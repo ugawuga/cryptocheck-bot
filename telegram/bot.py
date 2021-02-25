@@ -7,8 +7,8 @@ from telegram.send_tokens import send_to_contract_request
 from utils.fapper import Map
 from utils.is_unique import is_unique
 from api.api import get_transactions, get_user, create_user, form_user_hash, get_user_hash, \
-    update_user, check_address_exists, update_user_hash, get_anon_hash, update_anon_hash, add_anon_hash, \
-    get_user_transaction, add_user_transaction, send_hash_list, send_hash_and_flag, get_used_private, send_used_private, \
+    update_user, check_address_exists, get_anon_hash, add_anon_hash, \
+    get_user_transaction, add_user_transaction, send_hash_list, get_used_private, send_used_private, \
     get_all_hash, put_person_hash, get_person_hash, get_address_contract
 from api.rest import SUCCESS_MESSAGE
 from telegram.keyboard import back_or_next_keyboard, yes_or_no_keyboard, blockchain_keyboard, check_keyboard, \
@@ -547,10 +547,12 @@ class Bot:
                         print(send_message)
                         return CONTRACT_RESPONSE_ID
                     else:
-                        send_tokens = send_to_contract_request(self.bcs_address, self.payment,
-                                                               self.address_contract)
-                        print(send_tokens)
-                        return CONTRACT_RESPONSE_ID
+                        return ERROR_ID
+
+                        # send_tokens = send_to_contract_request(self.bcs_address, self.payment,
+                        #                                        self.address_contract)
+                        # print(send_tokens)
+                        # return CONTRACT_RESPONSE_ID
                 else:
                     return ERROR_ID
         else:
